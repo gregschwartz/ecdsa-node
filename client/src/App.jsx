@@ -8,6 +8,7 @@ function App() {
   const [balance, setBalance] = useState(0);
   const [address, setAddress] = useState("");
   const [privateKey, setPrivateKey] = useState("");
+  const [_, doUpdate] = useState("");
 
   return (
     <div className="app">
@@ -19,8 +20,8 @@ function App() {
         address={address}
         setAddress={setAddress}
       />
-      <Transfer setBalance={setBalance} address={address} /><br />
-      <Balances></Balances>
+      <Transfer setBalance={setBalance} privateKey={privateKey} /><br />
+      <Balances privateKey={privateKey} doUpdate={doUpdate}></Balances>
     </div>
   );
 }

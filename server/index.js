@@ -2,14 +2,17 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const port = 3042;
+const secp = require("ethereum-cryptography/secp256k1");
+const { sha256 } = require("ethereum-cryptography/sha256");
+const { hexToBytes, toHex, utf8ToBytes } = require("ethereum-cryptography/utils");
 
 app.use(cors());
 app.use(express.json());
 
-const balances = {
-  "d332f2de642b97ff721ccc814fb8f064c4035b0367486c85f9598b262152d515": 100,
-  "a39d5da5c05ed89ed979d8fd5344a532e8f1245f48caa15ae420466b44183565": 100,
-  "22a9033180b6fc8706f194a139656c1231c77f7dd149043797c72460ab19c0cc": 100,
+var balances = {
+  "04b2e9624c081cc5ba69de1a0799e39c4c92c8088dcba7ad9f0767696b9cba3c039e5cf65533edf8f07b3cb9c9845321e8adf55e127258be814abb1e8863d8503d": 100,
+  "044aa417a82ddab093bb4c8f567cb7400f978337f159a708dd6a719f0dcb84565129c0f2e368b19df28a10cd0a1c1add2b553ea9192622ae2532240ac15ee07531": 100,
+  "0462290ebc99dd81980148bc64742e277ed353a19309ede08a3c4fa09fba03749f92f592001c4b6e12d6f7d02aef361c803dfe781c040c1740fa03710a55503766": 100,
 };
 
 app.get("/balance/:address", (req, res) => {
@@ -19,14 +22,23 @@ app.get("/balance/:address", (req, res) => {
 });
 
 app.post("/send", (req, res) => {
-  const { sender, recipient, amount } = req.body;
+  const { sender, signature, recipient, amount } = req.body;
 
-  setInitialBalance(sender);
-  setInitialBalance(recipient);
+  const payload = {
+    sender: sender,
+    amount: amount,
+    recipient: recipient,
+  };
+  const hash = sha256(Uint8Array.from(JSON.stringify(payload)));
 
-  if (balances[sender] < amount) {
+  if (!secp.verify(signature, hash, sender)) {
+    res.status(400).send({ message: "Invalid signature" });
+  } else if (balances[sender] < amount) {
     res.status(400).send({ message: "Not enough funds!" });
   } else {
+    setInitialBalance(sender);
+    setInitialBalance(recipient);
+  
     balances[sender] -= amount;
     balances[recipient] += amount;
     res.send({ balance: balances[sender] });
