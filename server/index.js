@@ -24,6 +24,9 @@ app.get("/balance/:address", (req, res) => {
 app.post("/send", (req, res) => {
   const { sender, signature, recipient, amount } = req.body;
 
+  setInitialBalance(sender);
+  setInitialBalance(recipient);
+
   const payload = {
     sender: sender,
     amount: amount,
@@ -33,12 +36,11 @@ app.post("/send", (req, res) => {
 
   if (!secp.verify(signature, hash, sender)) {
     res.status(400).send({ message: "Invalid signature" });
+  } else if (sender == recipient) {
+    res.status(400).send({ message: "Cannot send funds to yourself!" });
   } else if (balances[sender] < amount) {
     res.status(400).send({ message: "Not enough funds!" });
   } else {
-    setInitialBalance(sender);
-    setInitialBalance(recipient);
-  
     balances[sender] -= amount;
     balances[recipient] += amount;
     res.send({ balance: balances[sender] });
